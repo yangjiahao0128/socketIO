@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="author" content="yangjiahao@gmail.com">
+    <meta name="viewport" id="viewport" content="user-scalable=no, initial-scale=1.0, maximum-scale=1.0" />
+    <title>Socket.IO Example</title>
+    <script type="text/javascript" src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        *{
+            margin: 0;
+            padding: 0;
+        }
+        html,body{
+            height: 100%;
+            width: 100%;
+        }
+        .title{
+            height: 50px;
+            text-align: center;
+        }
+        #count{color: red;height: 40px;}
+        .box{
+            height: calc(100% - 10px);
+            margin: 0 auto;
+            border: 5px solid #4DD0E1;
+            position: relative;
+            overflow: hidden;
+        }
+        form{
+            position: absolute;
+            bottom: 0;
+            height: 50px;
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+        }
+        form textarea{
+            width: 80%;
+        }
+        form #submit{
+            font-size: 20px;
+            width: 20%;
+            line-height: 42px;
+            text-align: center;
+        }
+        #msg{
+            /* height: 750px;
+            overflow-y: scroll; */
+        }
+        #msg .msgItem{
+            background: rgb(152,225,101);
+            font-size: 20px;
+            padding: 10px;
+            border: 1px solid #f5f5f5;
+            border-radius: 10px;
+            margin-right: 20px;
+            margin-left: 20px;
+            position: relative;
+            max-width: 70%;
+        }
+        .header{
+            font-size: 20px;
+            padding: 10px;
+            border: 1px solid #000;
+            border-radius: 10px;
+            width: 20px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .com{
+            /* height: 50px; */
+            overflow: hidden;
+            margin-bottom: 5px;
+        }
+        .left{
+            float: left;
+        }
+        .right{
+            float: right;
+        }
+        .tri_right:before{
+            content: "";
+            width: 0px;
+            height: 0px;
+            border-top: 10px solid transparent;
+            border-bottom: 10px solid transparent;
+            border-left: 10px solid rgb(152,225,101);
+            position: absolute;
+            top: 13px;
+            right: -9px;
+        }
+        .tri_left:before{
+            content: "";
+            width: 0px;
+            height: 0px;
+            border-top: 10px solid transparent;
+            border-bottom: 10px solid transparent;
+            border-right: 10px solid rgb(152,225,101);
+            position: absolute;
+            top: 13px;
+            left: -9px;
+        }
+        .content{
+            height: calc(100% - 140px);
+            overflow-y: scroll;
+        }
+        #submit{
+            -webkit-appearance: push-button;
+            user-select: none;
+            white-space: pre;
+            align-items: flex-start;
+            text-align: center;
+            cursor: default;
+            color: buttontext;
+            background-color: buttonface;
+            box-sizing: border-box;
+            padding: 1px 6px;
+            border-width: 2px;
+            border-style: outset;
+            border-color: buttonface;
+            border-image: initial;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="box">
+        <h1 class="title">SocketIO仿微信聊天<span style="
+            font-size: 15px;
+        ">authorYJH</span></h1>
+        <p id="count"></p>
+        <div class="content">
+            <div id="msg">
+            
+            </div>
+        </div>
+        <form id="message-form" action="#">
+            <textarea id="message" rows="2" cols="30"></textarea>
+            <div type="submit" id="submit">发送</div>
+        </form>
+    </div>
+    <form id="login-form" action="#" style="position: absolute;top: 200px;">
+        <input type="text" id="login" style="width: 80%;">
+        <input type="submit" value="起个名字吧"/>
+    </form>
+    <script>
+        $(".box").hide();
+        // var socket = io.connect();
+        
+        var socket = io.connect('http://123.56.96.30:8088:8088');
+        // var socket = io.connect('http://192.168.164.119:8088');
+
+        socket.on('users', function (data) {
+            $('#count').text('当前在线人数：' + data.number);
+        });
+        // 收到消息
+        socket.on('receive_message', function (data) {
+            console.log(data)
+            if(sessionStorage.getItem("flag")== data.user.flag){
+                $('#msg').append('<div class="com"><span class="header right">' + data.user.username+'</span><span class="msgItem tri_right right">' + data.text + '</span></div>');
+                $("#message").val("")
+            }else{
+                $('#msg').append('<div class="com"><span class="header left">' + data.user.username+'</span><span class="msgItem tri_left left">' + data.text + '</span></div>');
+            }
+            $(".content").scrollTop($(".content").scrollTop() + $(".com:last").height()+5);
+        });
+        $(document).keypress(function (e) {
+            if (e.keyCode == 13) {
+                message();
+            }
+        }) 
+        function message(){
+            var message = document.getElementById('message');
+            if(message.value!=""&& message.value != "\n"){
+                socket.emit('message', { text: message.value });
+                $("#message").val("")
+            }
+        }
+        $("#submit").on("click",function(){
+            message();
+        })
+        // 登录
+        var login = document.getElementById('login');
+        $(login.form).submit(function () {
+            var time = new Date().getTime();
+            socket.emit('login', { username: login.value,flag: time });
+            sessionStorage.setItem("flag",time)
+            $(".box").show();
+            $("#login-form").hide();
+            return false;
+        });
+
+    </script>
+
+</body>
+
+</html>
